@@ -4,14 +4,19 @@ import { planSchema } from "../../../domain/validation";
 import { JourneyPlanner } from "../../../services/JourneyPlanner";
 import { GoogleRoutesProvider } from "../../../providers/road/GoogleRoutesProvider";
 import { createRailProvider } from "../../../providers/rail/createRailProvider";
+import { isAllowedRequestOrigin } from "../../../services/requestOrigin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store, private" };
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers });
 export async function POST(request: Request) {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin)
+  if (!isAllowedRequestOrigin(request, [
+    process.env.APP_ORIGIN,
+    process.env.URL,
+    process.env.DEPLOY_URL,
+    process.env.DEPLOY_PRIME_URL,
+  ]))
     return json({ error: "Request origin is not permitted." }, 403);
   const token = process.env.JOURNEY_ACCESS_TOKEN;
   if (token) {
