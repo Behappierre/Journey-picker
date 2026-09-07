@@ -6,7 +6,10 @@
   NODE_VERSION = "22"
   NEXT_TELEMETRY_DISABLED = "1"
 
-# Netlify automatically installs its OpenNext adapter for Next.js.
+# Explicitly install the runtime for Git-triggered builds as well as CLI deploys.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 # Do not use a static export: /api/plan requires a server function.
 [[headers]]
   for = "/sw.js"
