@@ -151,6 +151,20 @@ describe("Huxley adapter", () => {
   });
 });
 describe("RTT Next Generation normalisation", () => {
+  it("maps offsetless live UK times in British summer time rather than server time", () => {
+    const liveShape = JSON.parse(JSON.stringify(fixture()).replaceAll(/(T\d{2}:\d{2}:\d{2})Z/g, "$1"));
+    const [service] = normaliseRttService(liveShape, "LTV", now.toISOString());
+    expect(service.scheduledDeparture.toISOString()).toBe("2026-09-07T12:00:00.000Z");
+    expect(service.estimatedArrival?.toISOString()).toBe("2026-09-07T13:20:00.000Z");
+    expect(service.arrivalUncertain).toBe(false);
+  });
+  it("rejects ambiguous and nonexistent UK local departure times", () => {
+    for (const local of ["2026-10-25T01:30:00", "2026-03-29T01:30:00"]) {
+      const data = fixture();
+      data.service.locations[0].temporalData.departure!.scheduleAdvertised = local;
+      expect(normaliseRttService(data, "LTV", now.toISOString())).toEqual([]);
+    }
+  });
   it("maps dated forecasts, operator, actual platform and delay into RailService", () => {
     const [service] = normaliseRttService(fixture(), "LTV", now.toISOString());
     expect(service).toMatchObject({

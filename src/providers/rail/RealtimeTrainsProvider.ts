@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DateTime } from "luxon";
 import type {
   RailProvider,
   RailService,
@@ -89,12 +90,14 @@ export interface RealtimeTrainsOptions {
   refreshToken?: string;
 }
 function date(value: string | null | undefined): Date | undefined {
-  // Reject undated/zone-less data instead of using the server machine's timezone.
-  return value &&
-    /T.*(?:Z|[+-]\d{2}:\d{2})$/.test(value) &&
-    Number.isFinite(Date.parse(value))
-    ? new Date(value)
-    : undefined;
+  // Live gb-nr responses use dated UK wall-clock times without an offset,
+  // even though the published schema describes RFC3339. Never use host time.
+  if (!value || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) return undefined;
+  const parsed = DateTime.fromISO(value, { zone: "Europe/London", setZone: true });
+  if (!parsed.isValid || parsed.getPossibleOffsets().length > 1) return undefined;
+  // Luxon moves nonexistent spring-forward times; reject those instead.
+  if (!/(?:Z|[+-]\d{2}:\d{2})$/.test(value) && parsed.toFormat("yyyy-MM-dd'T'HH:mm:ss") !== value.slice(0, 19)) return undefined;
+  return parsed.toJSDate();
 }
 function messages(reasons: z.infer<typeof reasonsSchema>): string[] {
   return (reasons ?? [])
