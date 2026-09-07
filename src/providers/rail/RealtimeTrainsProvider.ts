@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DateTime } from "luxon";
+import { RailProviderError } from "./RailProviderError";
 import type {
   RailProvider,
   RailService,
@@ -243,7 +244,7 @@ export class RealtimeTrainsProvider implements RailProvider {
     token: string,
   ): Promise<Cached<unknown>> {
     if (Date.now() < this.cooldownUntil)
-      throw new Error("RTT rate limit; try later");
+      throw new RailProviderError("rate_limit");
     const response = await this.fetcher(`https://data.rtt.io/${path}`, {
       cache: "no-store",
       redirect: "error",
@@ -266,8 +267,9 @@ export class RealtimeTrainsProvider implements RailProvider {
         Date.now() +
         (Number.isFinite(seconds) ? Math.min(Math.max(seconds, 1), 3600) : 60) *
           1000;
-      throw new Error("RTT rate limit; try later");
+      throw new RailProviderError("rate_limit");
     }
+    if (response.status === 401 || response.status === 403) throw new RailProviderError("credentials");
     if (!response.ok) throw new Error(`RTT returned ${response.status}`);
     const age = Math.max(0, Number(response.headers.get("age")) || 0);
     return {
@@ -308,7 +310,7 @@ export class RealtimeTrainsProvider implements RailProvider {
     return this.refreshing;
   }
   private async request(path: string) {
-    return this.cache.resolve(path, 25000, async () =>
+    return this.cache.resolve(path, 60000, async () =>
       this.fetchJson(path, await this.accessToken()),
     );
   }
@@ -361,11 +363,11 @@ export class RealtimeTrainsProvider implements RailProvider {
           (date(b.temporalData.departure?.scheduleAdvertised)?.getTime() ??
             Infinity),
       );
-    // Eight trains per strategy bounds detail calls; all complete itineraries still use
+    // Two trains per strategy bounds detail calls for the 10 requests/minute tier;
     // live destination forecasts from the service endpoint, never origin-board guesses.
     const details = await Promise.allSettled(
       candidates
-        .slice(0, 8)
+        .slice(0, 2)
         .map((s) =>
           this.getServiceDetails(
             s.scheduleMetadata.uniqueIdentity,
@@ -375,7 +377,7 @@ export class RealtimeTrainsProvider implements RailProvider {
         ),
     );
     if (details.length && details.every((r) => r.status === "rejected"))
-      throw new Error("RTT service details unavailable");
+      throw details[0].reason;
     const partial = details.some((r) => r.status === "rejected");
     const boardMessages = [
       ...statusMessages(board.data.systemStatus),
@@ -426,12 +428,9 @@ export class RealtimeTrainsProvider implements RailProvider {
     now: Date,
     horizon: number,
   ): Promise<RailDisruption[]> {
-    const response = await this.board(crs, now, horizon);
-    return [
-      ...new Set([
-        ...messages(response.data.reasons),
-        ...statusMessages(response.data.systemStatus),
-      ]),
-    ].map((message) => ({ message }));
+    // getDepartures already attaches board and service notices to each option.
+    // An extra unfiltered board duplicated requests and could discard otherwise
+    // valid journeys when only the redundant request hit a quota limit.
+    return [];
   }
 }

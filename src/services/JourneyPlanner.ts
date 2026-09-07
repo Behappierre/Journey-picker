@@ -10,6 +10,7 @@ import { calculateLeaveTime } from "./LeaveTimeCalculator";
 import { calculateConfidence } from "./ConfidenceCalculator";
 import { rankJourneys } from "./JourneyRanker";
 import { optimisation } from "../config/optimisation";
+import { RailProviderError } from "../providers/rail/RailProviderError";
 export class JourneyPlanner {
   constructor(
     private road: RoadRoutingProvider,
@@ -137,10 +138,13 @@ export class JourneyPlanner {
       }),
     );
     const successful = evaluated.filter((r) => r.status === "fulfilled");
+    const providerMessages = [...new Set(evaluated.flatMap(r =>
+      r.status === "rejected" && r.reason instanceof RailProviderError ? [r.reason.message] : []))];
     if (!successful.length)
       return {
         ...result,
         messages: [
+          ...providerMessages,
           `Live railway information unavailable. Check ${result.railSource} configuration and try again.`,
         ],
       };
@@ -167,15 +171,16 @@ export class JourneyPlanner {
         : "live";
     if (result.railDataStatus === "partial")
       result.messages.push(
+        ...providerMessages,
         "Some station data is unavailable. Comparing the stations that responded.",
       );
-    if (!ranked.length)
+    if (!ranked.length && result.railDataStatus !== "partial")
       result.messages.push(
         request.mode === "arrive_by"
           ? "No catchable journey meets this arrival time in the live planning window. Darwin is not an advance timetable planner."
           : "No catchable London journey found in the live planning window. Try refreshing or adjusting your stations.",
       );
-    else if (!result.recommended)
+    else if (ranked.length && !result.recommended)
       result.messages.push(
         "Only low-confidence journeys are available. Check the details before travelling.",
       );

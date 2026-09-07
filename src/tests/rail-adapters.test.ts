@@ -250,6 +250,12 @@ describe("RTT Next Generation normalisation", () => {
   });
 });
 describe("RTT HTTP adapter", () => {
+  it("does not duplicate disruption board requests", async () => {
+    const fetcher = mockFetch(() => Response.json({ services: [] }));
+    const provider = new RealtimeTrainsProvider({ accessToken: "test" }, fetcher);
+    await provider.getDisruptions("LTV", now, 180);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
   it("uses bearer auth, filtered boards and complete service details", async () => {
     const requests: { url: URL; init?: RequestInit }[] = [];
     const fetcher = mockFetch((url, init) => {
@@ -300,11 +306,11 @@ describe("RTT HTTP adapter", () => {
       fetcher,
     );
     await Promise.all([
-      provider.getDisruptions("LTV", now, 120),
-      provider.getDisruptions("DBY", now, 120),
+      provider.getDepartures("LTV", "EUS", now, 120),
+      provider.getDepartures("DBY", "STP", now, 120),
     ]);
     expect(fetcher).toHaveBeenCalledTimes(3);
-    await provider.getDisruptions("TAM", now, 120);
+    await provider.getDepartures("TAM", "EUS", now, 120);
     expect(fetcher).toHaveBeenCalledTimes(4);
   });
   it("honours rate-limit cooldown without repeated upstream requests", async () => {
@@ -316,11 +322,11 @@ describe("RTT HTTP adapter", () => {
       { accessToken: "test" },
       fetcher,
     );
-    await expect(provider.getDisruptions("LTV", now, 120)).rejects.toThrow(
-      "rate limit",
+    await expect(provider.getDepartures("LTV", "EUS", now, 120)).rejects.toThrow(
+      "limiting requests",
     );
-    await expect(provider.getDisruptions("TAM", now, 120)).rejects.toThrow(
-      "rate limit",
+    await expect(provider.getDepartures("TAM", "EUS", now, 120)).rejects.toThrow(
+      "limiting requests",
     );
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
@@ -338,7 +344,7 @@ describe("RTT HTTP adapter", () => {
     );
     await expect(
       provider.getDepartures("LTV", "EUS", now, 120),
-    ).rejects.toThrow("RTT returned 401");
+    ).rejects.toThrow("Realtime Trains rejected the configured credential");
   });
   it("selects providers only through explicit server configuration", () => {
     expect(createRailProvider({ RAIL_PROVIDER: "huxley" }).name).toContain(
@@ -356,3 +362,4 @@ describe("RTT HTTP adapter", () => {
     );
   });
 });
+

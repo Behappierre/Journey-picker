@@ -66,7 +66,7 @@ export async function buildRailJourneys(
     }),
   );
   if (results.every((r) => r.status === "rejected"))
-    throw new Error("Station unavailable");
+    throw results[0].reason;
   return {
     journeys: results.flatMap((r) => (r.status === "fulfilled" ? r.value : [])),
     partial: results.some((r) => r.status === "rejected"),
