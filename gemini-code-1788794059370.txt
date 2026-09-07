@@ -1,0 +1,7 @@
+Full Name,Company,Title,Department,Seniority,Influence Score,Sentiment,Sentiment Confidence
+Jack,First Rail London,Head of Control,,,
+Aaron Tourlamain,First Rail London,Control Strategy Development Manager,,,
+Matthew Bromley,First Rail London,Head of Business Intelligence,,,
+Tony Hickman,Network Rail,Head of Operations Strategy,Anglia,,
+Marcus Cash,Network Rail,Senior Network Delivery Manager,Anglia,,
+Max Coventry,Network Rail,Senior Operations Programme Manager,Anglia,,
