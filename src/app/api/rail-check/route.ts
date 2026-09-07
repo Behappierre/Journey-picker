@@ -14,7 +14,7 @@ export async function GET() {
     return { crs, status: boardResponse.status, limits: Object.fromEntries([...boardResponse.headers].filter(([key]) => key.startsWith("x-ratelimit") || key === "retry-after")), board: boardData, results: results.map(r => r.status === "fulfilled" ? { status: r.status, count: r.value.length } : { status: r.status, error: r.reason instanceof Error ? r.reason.message : "Unknown" }) };
   }));
   const response = await fetch("https://data.rtt.io/gb-nr/location?code=DBY&filterTo=STP&detailed=false", { headers, cache: "no-store" });
-  if (!response.ok || response.status === 204) return Response.json({ stage: "board", status: response.status });
+  if (!response.ok || response.status === 204) return Response.json({ checks, stage: "board", status: response.status, limits: Object.fromEntries([...response.headers].filter(([key]) => key.startsWith("x-ratelimit") || key === "retry-after")) });
   const board = await response.json();
   const identity = board.services?.[0]?.scheduleMetadata?.uniqueIdentity;
   const detail = identity ? await fetch(`https://data.rtt.io/gb-nr/service?uniqueIdentity=${encodeURIComponent(identity.replace(/^gb-nr:/, ""))}&detailed=false`, { headers, cache: "no-store" }) : undefined;
