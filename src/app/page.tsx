@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DateTime } from "luxon";
 import type { ClientPlan, Settings } from "../domain/models";
-import { defaultSettings } from "../config/stations";
+import { defaultSettings, addParkwayAndTamworth } from "../config/stations";
 import { settingsSchema } from "../domain/validation";
 import { JourneyCard } from "../components/JourneyCard";
 import { SettingsPanel } from "../components/SettingsPanel";
@@ -30,8 +30,13 @@ export default function Home() {
       const saved = localStorage.getItem("london-settings-v1");
       if (saved) {
         const parsed = settingsSchema.safeParse(JSON.parse(saved));
-        if (parsed.success) setSettings(parsed.data);
+        if (parsed.success) {
+          const upgraded = localStorage.getItem("journey-stations-emd-tam-v1") ? parsed.data : addParkwayAndTamworth(parsed.data);
+          setSettings(upgraded);
+          localStorage.setItem("london-settings-v1", JSON.stringify(upgraded));
+        }
       }
+      localStorage.setItem("journey-stations-emd-tam-v1", "done");
       setAccessToken(sessionStorage.getItem("journey-access") ?? "");
     } catch {
       setError("Saved settings could not be loaded. You can set them again.");

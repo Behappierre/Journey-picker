@@ -18,7 +18,7 @@ import type {
 const now = new Date("2026-09-07T12:00:00Z");
 const at = (minutes: number) => new Date(+now + minutes * 60000);
 const station: CandidateStation = {
-  ...defaultStations[0],
+  ...defaultStations.find(s => s.crs === "LTV")!,
   id: "a",
   crs: "AAA",
   defaultDriveMinutes: 20,

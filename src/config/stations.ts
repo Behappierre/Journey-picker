@@ -23,6 +23,8 @@ function station(
 }
 // Starting suggestions; edit car-park coordinates and overheads for your actual route.
 export const defaultStations: CandidateStation[] = [
+  // DfT station entrance coordinates: planning.data.gov.uk/entity/50169891
+  station("east-midlands-parkway", "East Midlands Parkway", "EMD", 52.862566, -1.263608, 35, "STP"),
   station(
     "lichfield",
     "Lichfield Trent Valley",
@@ -39,6 +41,12 @@ export const defaultStations: CandidateStation[] = [
     railStrategies: [
       {
         type: "one_change",
+        interchangeCrs: "TAM",
+        destinationCrs: "EUS",
+        minimumConnectionMinutes: 10,
+      },
+      {
+        type: "one_change",
         interchangeCrs: "DBY",
         destinationCrs: "STP",
         minimumConnectionMinutes: 10,
@@ -46,6 +54,19 @@ export const defaultStations: CandidateStation[] = [
     ],
   },
 ];
+/** One-time upgrade of existing saved settings; preserve home and custom buffers. */
+export function addParkwayAndTamworth(settings: Settings): Settings {
+  const stations = structuredClone(settings.stations);
+  const existing = stations.findIndex(s => s.crs === "EMD");
+  const parkway = existing >= 0 ? stations.splice(existing, 1)[0] : structuredClone(defaultStations[0]);
+  parkway.enabled = true;
+  stations.unshift(parkway);
+  for (const s of stations.filter(s => s.crs === "BUT")) {
+    if (!s.railStrategies.some(r => r.type === "one_change" && r.interchangeCrs === "TAM" && r.destinationCrs === "EUS"))
+      s.railStrategies.push({ type: "one_change", interchangeCrs: "TAM", destinationCrs: "EUS", minimumConnectionMinutes: 10 });
+  }
+  return { ...settings, stations };
+}
 export const defaultSettings: Settings = {
   home: null,
   stations: defaultStations,

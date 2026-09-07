@@ -52,7 +52,7 @@ export function importCif(cif: string, msn: string, now = new Date()): Timetable
   const start = DateTime.fromJSDate(now, { zone: "Europe/London" }).startOf("day");
   const end = start.plus({ days: 7 });
   const services: TimetableRow[] = [];
-  const wanted = new Set(["LTV", "TAM", "DBY", "BUT", "EUS", "STP"]);
+  const wanted = new Set(["EMD", "LTV", "TAM", "DBY", "BUT", "EUS", "STP"]);
   for (let day = start.minus({ days: 1 }); day < end; day = day.plus({ days: 1 })) {
     const date = day.toISODate()!;
     const groups = new Map<string, Schedule[]>();
@@ -81,5 +81,6 @@ export function importCif(cif: string, msn: string, now = new Date()): Timetable
       }
     }
   }
-  return { version: 1, source: "RDG", importedAt: now.toISOString(), validFrom: start.toUTC().toISO()!, validUntil: end.toUTC().toISO()!, services, warnings: ["Scheduled times only. Live cancellations, delays and platforms unavailable.", "Coverage: LTV, TAM, DBY, BUT, EUS and STP. Bank-holiday conditional schedules, ambiguous midnight calls and joining/splitting extensions are omitted."] };
+  return { version: 1, source: "RDG", importedAt: now.toISOString(), validFrom: start.toUTC().toISO()!, validUntil: end.toUTC().toISO()!, services, warnings: ["Scheduled times only. Live cancellations, delays and platforms unavailable.", "Coverage: EMD, LTV, TAM, DBY, BUT, EUS and STP. Bank-holiday conditional schedules, ambiguous midnight calls and joining/splitting extensions are omitted."] };
 }
+

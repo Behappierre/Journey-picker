@@ -5,7 +5,7 @@ import { importCif } from "../src/providers/timetable/importCif.ts";
 const [mca, msn, output, published] = process.argv.slice(2);
 if (!mca || !msn || !output || !/^\d{4}-\d{2}-\d{2}$/.test(published ?? "")) throw new Error("Usage: npm run timetable:import -- full.MCA matching.MSN output.json YYYY-MM-DD (publication date from DAT)");
 const stations = await readFile(msn, "utf8");
-const wanted = new Set(["LTV", "TAM", "DBY", "BUT", "EUS", "STP"]);
+const wanted = new Set(["EMD", "LTV", "TAM", "DBY", "BUT", "EUS", "STP"]);
 const tiplocs = new Set(stations.split(/\r?\n/).filter(l => l.startsWith("A") && wanted.has(l.slice(49,52).trim())).map(l => l.slice(36,43).trim()));
 const retained: string[] = [];
 let block: string[] = [], relevant = false;
@@ -26,3 +26,4 @@ if (Date.parse(data.validUntil) <= Date.now()) throw new Error("Published timeta
 if (!data.services.length) throw new Error("No relevant services found; output was not changed");
 await writeFile(output, JSON.stringify(data));
 console.log(`Imported ${data.services.length} scheduled station pairs, valid until ${data.validUntil}. ${data.warnings.join(" ")}`);
+

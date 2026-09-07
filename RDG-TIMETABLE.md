@@ -13,8 +13,9 @@ Link Netlify CLI to the production site before uploading. Enable `RDG_TIMETABLE_
 
 The importer handles full snapshots only; never apply an incremental CFA as a replacement. Reimport a new download at least weekly. Imported results expire after at most eight days from the source publication date and cover at most seven days from import. Expired data is not used.
 
-Coverage is limited to LTV, TAM, DBY, BUT, EUS and STP. Source calendars, public times, STP overlays and cancellations are applied before route filtering. Bank-holiday conditional schedules and ambiguous midnight/DST times are omitted conservatively. Joining/splitting associations, bus/ferry links and additional stations are not supported. This is a limited fallback, not a complete national journey planner.
+Coverage is limited to EMD, LTV, TAM, DBY, BUT, EUS and STP. Source calendars, public times, STP overlays and cancellations are applied before route filtering. Bank-holiday conditional schedules and ambiguous midnight/DST times are omitted conservatively. Joining/splitting associations, bus/ferry links and additional stations are not supported. This is a limited fallback, not a complete national journey planner.
 
 Live successful responses (including empty and cancelled boards) are authoritative. Failed requests can use scheduled data, with no live forecasts or platform claims. Observed cancellations are retained within the warm provider instance; cold starts cannot retain live observations. Scheduled connections require extra margin and remain low confidence. Google road estimates remain independent. Data is stored privately in Netlify Blobs; passengers receive only computed journey results. Follow the National Rail licence and attribution requirements.
 
 The current import is manually refreshed. It does not periodically log into RDG or download updates automatically.
+
