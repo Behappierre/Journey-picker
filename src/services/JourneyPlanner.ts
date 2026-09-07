@@ -164,6 +164,10 @@ export class JourneyPlanner {
     const displayed = [result.recommended, ...result.alternatives].filter(
       (o): o is JourneyOption => !!o,
     );
+    if (displayed.some(j => j.services.some(s => s.dataSource === "timetable"))) {
+      result.railDataStatus = "scheduled";
+      result.messages.push("Scheduled timetable fallback — live delays, cancellations and platforms unavailable. Check before travelling.");
+    }
     result.roadDataStatus = !displayed.length
       ? "unavailable"
       : displayed.some((o) => o.road.status !== "live")

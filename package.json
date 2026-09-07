@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "timetable:import": "node --experimental-strip-types scripts/import-rdg.ts",
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
@@ -10,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@netlify/blobs": "^11.0.3",
     "luxon": "^3.7.2",
     "next": "^16.1.6",
     "react": "^19.2.4",

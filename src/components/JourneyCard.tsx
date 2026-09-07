@@ -23,7 +23,8 @@ export function JourneyCard({
   primary?: boolean;
 }) {
   const remaining = Math.floor((Date.parse(j.leaveHomeAt) - now) / 60000);
-  const stale = [j.road.calculatedAt, j.railUpdatedAt].some(
+  const scheduled = j.services.some(s => s.dataSource === "timetable");
+  const stale = [j.road.calculatedAt, ...(!scheduled ? [j.railUpdatedAt] : [])].some(
     (t) => now - Date.parse(t) > 120000,
   );
   const terminal =
@@ -39,7 +40,7 @@ export function JourneyCard({
         <span
           className={`confidence ${stale || remaining < 0 ? "low" : j.confidence}`}
         >
-          {stale
+          {scheduled ? "SCHEDULED ONLY" : stale
             ? "STALE DATA"
             : remaining < 0
               ? "REFRESH NEEDED"

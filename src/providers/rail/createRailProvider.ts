@@ -2,6 +2,10 @@ import type { RailProvider } from "../../domain/models";
 import { NationalRailDarwinProvider } from "./NationalRailDarwinProvider";
 import { HuxleyRailProvider } from "./HuxleyRailProvider";
 import { RealtimeTrainsProvider } from "./RealtimeTrainsProvider";
+import { remoteTimetable } from "../timetable/RdgTimetableProvider";
+import { TimetableFallbackProvider } from "../timetable/TimetableFallbackProvider";
+import { RdgTimetableProvider } from "../timetable/RdgTimetableProvider";
+import { getStore } from "@netlify/blobs";
 let cached: { key: string; provider: RailProvider } | undefined;
 /** Server-only configuration is read here by the API route, never by React. */
 export function createRailProvider(
@@ -16,6 +20,8 @@ export function createRailProvider(
     env.RTT_REFRESH_TOKEN,
     env.NATIONAL_RAIL_USERNAME,
     env.NATIONAL_RAIL_PASSWORD,
+    env.RDG_TIMETABLE_URL,
+    env.RDG_TIMETABLE_ENABLED,
   ]);
   if (cached?.key === key) return cached.provider;
   let provider: RailProvider;
@@ -41,6 +47,8 @@ export function createRailProvider(
     default:
       throw new Error("Unsupported RAIL_PROVIDER");
   }
+  if (env.RDG_TIMETABLE_URL) provider = new TimetableFallbackProvider(provider, remoteTimetable(env.RDG_TIMETABLE_URL));
+  else if (env.RDG_TIMETABLE_ENABLED === "true") provider = new TimetableFallbackProvider(provider, new RdgTimetableProvider(() => getStore("rdg-timetable").get("current", { type: "json" })));
   cached = { key, provider };
   return provider;
 }

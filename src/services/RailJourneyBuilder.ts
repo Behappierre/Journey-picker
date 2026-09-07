@@ -45,15 +45,16 @@ export async function buildRailJourneys(
       );
       return first.flatMap((a) => {
         // A connection cannot be promised without a usable live arrival forecast.
-        if (a.arrivalUncertain || !a.estimatedArrival) return [];
+        const scheduled = a.dataSource === "timetable";
+        if (!scheduled && (a.arrivalUncertain || !a.estimatedArrival)) return [];
         return second
           .filter((b) => b.serviceId !== a.serviceId)
           .flatMap((b) => {
             const margin = minutesBetween(
               safeDeparture(b, settings.lateTrainRecoveryBufferMinutes),
-              a.estimatedArrival!,
+              a.estimatedArrival ?? a.scheduledArrival!,
             );
-            return margin >= minimum
+            return margin >= minimum + (scheduled ? 5 : 0)
               ? [
                   {
                     services: [a, b],

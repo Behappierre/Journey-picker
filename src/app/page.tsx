@@ -357,7 +357,7 @@ export default function Home() {
         <span className="footer-brand">London, next.</span>
         <span>Built for the whole journey.</span>
         <p>
-          Times shown in Europe/London. Live rail:{" "}
+          Times shown in Europe/London. Rail source:{" "}
           {result?.railSource ?? "your configured provider"}.<br />
           Driving estimates: Google Maps. Always check station displays.
         </p>

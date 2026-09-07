@@ -9,6 +9,10 @@ export function calculateConfidence(
 ): { confidence: Confidence; reasons: string[] } {
   const reasons: string[] = [];
   let low = false;
+  if (services.some(s => s.dataSource === "timetable")) {
+    low = true;
+    reasons.push("Scheduled timetable only; live running and cancellations are unconfirmed");
+  }
   if (road.status !== "live")
     reasons.push("Driving time is a cached or configured estimate");
   if (

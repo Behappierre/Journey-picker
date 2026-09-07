@@ -48,6 +48,7 @@ export interface RoadRoutingProvider {
   ): Promise<RoadJourney>;
 }
 export interface RailService {
+  dataSource?: "live" | "timetable";
   serviceId: string;
   originCrs: string;
   destinationCrs: string;
@@ -125,7 +126,7 @@ export interface PlanResult {
   recommended: JourneyOption | null;
   alternatives: JourneyOption[];
   roadDataStatus: "live" | "degraded" | "unavailable";
-  railDataStatus: "live" | "partial" | "unavailable";
+  railDataStatus: "live" | "partial" | "unavailable" | "scheduled";
   messages: string[];
 }
 export type Jsonify<T> = T extends Date
