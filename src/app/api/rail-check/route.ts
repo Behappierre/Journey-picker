@@ -11,7 +11,7 @@ export async function GET() {
     const boardResponse = await fetch(`https://data.rtt.io/gb-nr/location?code=${crs}&filterTo=${destination}&detailed=false`, { headers, cache: "no-store" });
     const boardData = boardResponse.status === 200 ? await boardResponse.json() : null;
     const results = await Promise.allSettled([provider.getDepartures(crs, destination, new Date(), 180), provider.getDisruptions(crs, new Date(), 180)]);
-    return { crs, status: boardResponse.status, board: boardData, results: results.map(r => r.status === "fulfilled" ? { status: r.status, count: r.value.length } : { status: r.status, error: r.reason instanceof Error ? r.reason.message : "Unknown" }) };
+    return { crs, status: boardResponse.status, limits: Object.fromEntries([...boardResponse.headers].filter(([key]) => key.startsWith("x-ratelimit") || key === "retry-after")), board: boardData, results: results.map(r => r.status === "fulfilled" ? { status: r.status, count: r.value.length } : { status: r.status, error: r.reason instanceof Error ? r.reason.message : "Unknown" }) };
   }));
   const response = await fetch("https://data.rtt.io/gb-nr/location?code=DBY&filterTo=STP&detailed=false", { headers, cache: "no-store" });
   if (!response.ok || response.status === 204) return Response.json({ stage: "board", status: response.status });
