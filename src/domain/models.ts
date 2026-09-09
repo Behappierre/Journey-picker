@@ -25,6 +25,7 @@ export interface CandidateStation {
   railStrategies: RailStrategy[];
 }
 export interface Settings {
+  homePostcode?: string;
   home: LatLng | null;
   stations: CandidateStation[];
   objective: Objective;

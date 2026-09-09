@@ -15,6 +15,7 @@ const strategySchema = z.discriminatedUnion("type", [
   }),
 ]);
 export const settingsSchema = z.object({
+  homePostcode: z.string().max(16).optional(),
   home: coordinatesSchema.nullable(),
   stations: z
     .array(

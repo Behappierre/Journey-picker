@@ -15,28 +15,55 @@ export function SettingsPanel({
 }) {
   const [draft, setDraft] = useState<Settings>(() => structuredClone(initial));
   const [token, setToken] = useState(accessToken);
+  const [postcode, setPostcode] = useState(initial.homePostcode ?? "");
+  const [lookingUp, setLookingUp] = useState(false);
   const [message, setMessage] = useState("");
   const updateStation = (id: string, value: Partial<CandidateStation>) =>
     setDraft((d) => ({
       ...d,
       stations: d.stations.map((s) => (s.id === id ? { ...s, ...value } : s)),
     }));
+  async function findPostcode() {
+    setLookingUp(true);
+    setMessage("Looking up your postcode...");
+    try {
+      const response = await fetch("/api/postcode", {
+        method: "POST",
+        headers: {"Content-Type":"application/json", ...(token ? {Authorization:`Bearer ${token}`} : {})},
+        body: JSON.stringify({postcode}),
+        signal: AbortSignal.timeout(15000),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Postcode lookup failed.");
+      setDraft(d => ({...d, home:data.location, homePostcode:data.postcode}));
+      setPostcode(data.postcode);
+      setMessage(`Found ${data.postcode}. Save to use this approximate starting point.`);
+    } catch(error) {
+      setMessage(error instanceof Error && error.name === "Error" ? error.message : "Postcode lookup is unavailable. Please try again.");
+    } finally { setLookingUp(false); }
+  }
   function locate() {
+    setPostcode("");
     setMessage("Finding your location…");
     if (!navigator.geolocation)
       return setMessage("Location is not supported. Enter coordinates below.");
+    setLookingUp(true);
     navigator.geolocation.getCurrentPosition(
       (p) => {
+        setLookingUp(false);
         setDraft((d) => ({
           ...d,
+          homePostcode: undefined,
           home: { lat: p.coords.latitude, lng: p.coords.longitude },
         }));
         setMessage("Location found. Save to use it as home.");
       },
-      () =>
+      () => {
+        setLookingUp(false);
         setMessage(
           "Location unavailable. Allow location access or enter coordinates below.",
-        ),
+        );
+      },
       { enableHighAccuracy: true, timeout: 10000 },
     );
   }
@@ -58,6 +85,9 @@ export function SettingsPanel({
       <form
         onSubmit={(e) => {
           e.preventDefault();
+          if (lookingUp) return;
+          if (postcode.trim() && postcode.replace(/\s/g, "").toUpperCase() !== (draft.homePostcode ?? "").replace(/\s/g, "").toUpperCase())
+            return setMessage("Look up your postcode before saving.");
           const result = settingsSchema.safeParse(draft);
           if (!result.success) {
             setMessage(
@@ -68,19 +98,35 @@ export function SettingsPanel({
             return;
           }
           if (!draft.home)
-            return setMessage("Set your home coordinates first.");
+            return setMessage("Look up your postcode or use your current location first.");
           onSave(result.data, token);
         }}
       >
         <fieldset>
           <legend>Your starting point</legend>
           <p>
-            Home coordinates stay on this device and are sent to the server and
-            Google only when you plan a journey.
+            Your starting point is saved on this device. Postcodes are sent to Google
+            Maps for lookup; coordinates are sent to Google when planning a journey.
           </p>
-          <button type="button" className="secondary-button" onClick={locate}>
+        {message && (
+          <p role="status" className="notice">
+            {message}
+          </p>
+        )}
+          <label>
+            Home postcode
+            <input type="text" autoComplete="postal-code" placeholder="e.g. SW1A 1AA"
+              maxLength={16} value={postcode} disabled={lookingUp}
+              onChange={e => setPostcode(e.target.value)} />
+          </label>
+          <button type="button" className="secondary-button" disabled={lookingUp || !postcode.trim()} onClick={findPostcode}>
+            {lookingUp ? "Looking up..." : "Find postcode"}
+          </button>
+          <p>Google Maps - Postcodes give an approximate location. Use your current location for a more precise starting point.</p>
+          <button type="button" className="secondary-button" disabled={lookingUp} onClick={locate}>
             ⌖ Use current location as home
           </button>
+          <details><summary>Enter coordinates manually (optional)</summary>
           <div className="field-grid">
             <label>
               Latitude
@@ -89,17 +135,19 @@ export function SettingsPanel({
                 step="any"
                 min="-90"
                 max="90"
-                required
                 value={draft.home?.lat ?? ""}
-                onChange={(e) =>
+                disabled={lookingUp}
+                onChange={(e) => {
+                  setPostcode("");
                   setDraft({
                     ...draft,
+                    homePostcode: undefined,
                     home: {
                       lat: Number(e.target.value),
                       lng: draft.home?.lng ?? 0,
                     },
-                  })
-                }
+                  });
+                }}
               />
             </label>
             <label>
@@ -109,20 +157,23 @@ export function SettingsPanel({
                 step="any"
                 min="-180"
                 max="180"
-                required
                 value={draft.home?.lng ?? ""}
-                onChange={(e) =>
+                disabled={lookingUp}
+                onChange={(e) => {
+                  setPostcode("");
                   setDraft({
                     ...draft,
+                    homePostcode: undefined,
                     home: {
                       lat: draft.home?.lat ?? 0,
                       lng: Number(e.target.value),
                     },
-                  })
-                }
+                  });
+                }}
               />
             </label>
           </div>
+          </details>
         </fieldset>
         <fieldset>
           <legend>Travel preferences</legend>
@@ -476,12 +527,7 @@ export function SettingsPanel({
             credentials belong in Netlify environment variables.
           </p>
         </fieldset>
-        {message && (
-          <p role="status" className="notice">
-            {message}
-          </p>
-        )}
-        <button className="save-button" type="submit">
+        <button className="save-button" type="submit" disabled={lookingUp}>
           Save settings & plan journey →
         </button>
       </form>
