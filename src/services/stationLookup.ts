@@ -30,6 +30,7 @@ export async function lookupStation(query:string, key:string, fetcher:typeof fet
     const name = r.address_components.find(c=>c.types.some(t=>["train_station","point_of_interest","establishment"].includes(t)))?.long_name ?? r.formatted_address.split(",")[0];
     if (!results.some(s=>s.id===r.place_id)) results.push({id:r.place_id,name,address:r.formatted_address,location:r.geometry.location});
   }
+  if (!results.length) console.info("station-lookup-diagnostic", JSON.stringify((data.results ?? []).map((r: {types?:string[];partial_match?:boolean;formatted_address?:string;address_components?:unknown}) => ({types:r.types,partial:r.partial_match,address:r.formatted_address,components:r.address_components}))));
   if (!results.length) throw new PostcodeError("No UK railway station found. Try the full station name, including its town.",404);
   return results.slice(0,5);
 }
