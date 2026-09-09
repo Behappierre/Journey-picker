@@ -23,6 +23,12 @@ describe("station lookup",()=>{
   ])("rejects towns, partial matches, unverified countries and invalid locations",async(result)=>{
     await expect(lookupStation("Derby","key",mock({status:"OK",results:[result]}))).rejects.toMatchObject({status:404});
   });
+  it("accepts Google's EMD transit classification only with an exact railway name",async()=>{
+    const googleEmd = {...station,partial_match:true,types:["establishment","point_of_interest","transit_station"],address_components:[{long_name:"East Midlands Parkway railway station",short_name:"East Midlands Parkway railway station",types:["establishment"]},station.address_components[1]]};
+    expect(await lookupStation("East Midlands Parkway","key",mock({status:"OK",results:[googleEmd]}))).toHaveLength(1);
+    await expect(lookupStation("Derby","key",mock({status:"OK",results:[googleEmd]}))).rejects.toMatchObject({status:404});
+    await expect(lookupStation("East Midlands Parkway","key",mock({status:"OK",results:[{...googleEmd,address_components:station.address_components}]}))).rejects.toMatchObject({status:404});
+  });
   it("handles quota and denied access without exposing upstream messages",async()=>{
     await expect(lookupStation("Derby","secret",mock({status:"REQUEST_DENIED",error_message:"secret"}))).rejects.toMatchObject({status:503,message:expect.stringContaining("Enable the Geocoding API")});
     await expect(lookupStation("Derby","key",mock({status:"OVER_QUERY_LIMIT"}))).rejects.toMatchObject({status:429});

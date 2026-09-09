@@ -26,11 +26,13 @@ export async function lookupStation(query:string, key:string, fetcher:typeof fet
     const parsed = googleResultSchema.safeParse(raw);
     if (!parsed.success) continue;
     const r = parsed.data;
-    if (r.partial_match || !r.types.includes("train_station") || !r.address_components.some(c=>c.types.includes("country") && c.short_name === "GB")) continue;
     const name = r.address_components.find(c=>c.types.some(t=>["train_station","point_of_interest","establishment"].includes(t)))?.long_name ?? r.formatted_address.split(",")[0];
+    const normalise = (value:string) => value.toLowerCase().replace(/\b(railway|rail|train|station)\b/g, "").replace(/[^a-z0-9]/g, "");
+    const exactName = normalise(name) === normalise(query);
+    const railway = r.types.includes("train_station") || (r.types.includes("transit_station") && /\b(railway|rail|train) station\b/i.test(name));
+    if (!railway || (r.partial_match && !exactName) || !r.address_components.some(c=>c.types.includes("country") && c.short_name === "GB")) continue;
     if (!results.some(s=>s.id===r.place_id)) results.push({id:r.place_id,name,address:r.formatted_address,location:r.geometry.location});
   }
-  if (!results.length && query === "East Midlands Parkway") throw new PostcodeError(JSON.stringify((data.results ?? []).map((r: {types?:string[];partial_match?:boolean;formatted_address?:string;address_components?:unknown}) => ({types:r.types,partial:r.partial_match,address:r.formatted_address,components:r.address_components}))),404);
   if (!results.length) throw new PostcodeError("No UK railway station found. Try the full station name, including its town.",404);
   return results.slice(0,5);
 }
