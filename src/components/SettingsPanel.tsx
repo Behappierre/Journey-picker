@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import type { CandidateStation, Settings } from "../domain/models";
+import { StationLookup } from "./StationLookup";
+import { defaultStations } from "../config/stations";
 import { settingsSchema } from "../domain/validation";
 export function SettingsPanel({
   initial,
@@ -262,8 +264,23 @@ export function SettingsPanel({
                   Remove
                 </button>
               </div>
-              <details>
+              <details open={!s.crs || undefined}>
                 <summary>Edit station, buffers & route</summary>
+                <StationLookup name={s.name} token={token} onSelect={result => {
+                  const nearby = (location: {lat:number;lng:number}) =>
+                    Math.abs(location.lat-result.location.lat)<0.005 && Math.abs(location.lng-result.location.lng)<0.008;
+                  const normaliseName = (name:string) => name.toLowerCase().replace(/\b(railway|rail|train|station)\b/g, "").replace(/[^a-z0-9]/g, "");
+                  const matches = (name:string) => normaliseName(name) === normaliseName(result.name);
+                  const known = defaultStations.find(station=>matches(station.name) && nearby(station.location));
+                  const sameStation = matches(s.name) && nearby(s.location) && !!s.crs;
+                  updateStation(s.id, {
+                    name:known?.name ?? result.name, location:result.location,
+                    crs:known?.crs ?? (sameStation ? s.crs : ""),
+                    railStrategies: sameStation ? s.railStrategies : known ? structuredClone(known.railStrategies) : [{type:"direct",destinationCrs:""}],
+                    enabled: sameStation ? s.enabled : false,
+                  });
+                }}/>
+                <p>For a new station, check the CRS code and route below, then tick the station to include it.</p>
                 <div className="field-grid">
                   <label>
                     Name
@@ -492,7 +509,7 @@ export function SettingsPanel({
                     {
                       id: crypto.randomUUID(),
                       name: "New station",
-                      crs: "EUS",
+                      crs: "",
                       location: { lat: 0, lng: 0 },
                       enabled: false,
                       parkingMinutes: 5,
@@ -500,7 +517,7 @@ export function SettingsPanel({
                       platformSafetyMinutes: 4,
                       defaultDriveMinutes: 30,
                       railStrategies: [
-                        { type: "direct", destinationCrs: "EUS" },
+                        { type: "direct", destinationCrs: "" },
                       ],
                     },
                   ],
