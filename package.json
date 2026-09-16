@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@netlify/blobs": "^11.0.3",
+    "fast-xml-parser": "^5.11.1",
     "luxon": "^3.7.2",
     "next": "^16.1.6",
     "react": "^19.2.4",

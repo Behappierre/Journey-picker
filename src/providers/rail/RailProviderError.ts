@@ -1,8 +1,8 @@
 /** Only allowlisted, credential-free messages may be shown to passengers. */
 export class RailProviderError extends Error {
-  constructor(readonly code: "rate_limit" | "credentials") {
+  constructor(readonly code: "rate_limit" | "credentials", provider: "Realtime Trains" | "National Rail RTJP" = "Realtime Trains") {
     super(code === "rate_limit"
-      ? "Realtime Trains is limiting requests. Wait before refreshing; this comparison is incomplete."
-      : "Realtime Trains rejected the configured credential. Check the server token configuration.");
+      ? `${provider} is limiting requests. Wait before refreshing; this comparison is incomplete.`
+      : `${provider} rejected the configured credential. Check the server token configuration.`);
   }
 }

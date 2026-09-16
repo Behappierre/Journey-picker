@@ -6,6 +6,7 @@ import { remoteTimetable } from "../timetable/RdgTimetableProvider";
 import { TimetableFallbackProvider } from "../timetable/TimetableFallbackProvider";
 import { RdgTimetableProvider } from "../timetable/RdgTimetableProvider";
 import { getStore } from "@netlify/blobs";
+import { RtjpRailProvider } from "./RtjpRailProvider";
 let cached: { key: string; provider: RailProvider } | undefined;
 /** Server-only configuration is read here by the API route, never by React. */
 export function createRailProvider(
@@ -14,6 +15,9 @@ export function createRailProvider(
   const kind = env.RAIL_PROVIDER || "darwin";
   const key = JSON.stringify([
     kind,
+    env.RTJP_ENDPOINT,
+    env.RTJP_USERNAME,
+    env.RTJP_PASSWORD,
     env.HUXLEY_BASE_URL,
     env.HUXLEY_ACCESS_TOKEN,
     env.RTT_ACCESS_TOKEN,
@@ -26,6 +30,9 @@ export function createRailProvider(
   if (cached?.key === key) return cached.provider;
   let provider: RailProvider;
   switch (kind) {
+    case "rtjp":
+      provider = new RtjpRailProvider(env.RTJP_ENDPOINT || "", env.RTJP_USERNAME || "", env.RTJP_PASSWORD || "");
+      break;
     case "huxley":
       provider = new HuxleyRailProvider({
         baseUrl: env.HUXLEY_BASE_URL || "https://huxley2.azurewebsites.net",
